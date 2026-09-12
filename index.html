@@ -1463,14 +1463,12 @@
         setLifeNavExpanded(true);
         closeMobileMenu();
         renderAll();
-        requestAnimationFrame(() => {
-          const card = document.getElementById(target.card);
-          if (!card) return;
-          const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-          const top = Math.max(0, window.scrollY + card.getBoundingClientRect().top - 112);
-          window.scrollTo({ top, behavior: reducedMotion ? 'auto' : 'smooth' });
-          document.getElementById(target.focus)?.focus({ preventScroll: true });
-        });
+        const card = document.getElementById(target.card);
+        if (!card) return;
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const top = Math.max(0, window.scrollY + card.getBoundingClientRect().top - 112);
+        window.scrollTo({ top, behavior: reducedMotion ? 'auto' : 'smooth' });
+        document.getElementById(target.focus)?.focus({ preventScroll: true });
       }
       function setLifeNavExpanded(expanded) {
         const toggle = document.getElementById('life-nav-toggle');
