@@ -507,6 +507,27 @@
       font-weight: 650;
       letter-spacing: 0;
     }
+    .nav-group-toggle {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 0 10px 4px;
+      border: 0;
+      color: #777870;
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
+    }
+    .nav-group-toggle:hover { color: var(--ink); }
+    .nav-group-toggle .nav-chevron {
+      width: 14px;
+      height: 14px;
+      flex: 0 0 14px;
+      transition: transform var(--ease), color var(--ease);
+    }
+    .nav-group-toggle[aria-expanded="false"] .nav-chevron { transform: rotate(-90deg); }
     .nav-list { display: grid; gap: 3px; }
     .nav-item {
       min-height: 44px;
@@ -538,6 +559,37 @@
       font-size: 11px;
       font-weight: 700;
     }
+    .nav-sublist {
+      display: grid;
+      gap: 2px;
+      margin: 1px 0 3px 32px;
+      padding-left: 11px;
+      border-left: 1px solid #d5d5cf;
+    }
+    .nav-subitem {
+      min-height: 34px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 0 9px;
+      border: 1px solid transparent;
+      border-radius: 5px;
+      color: #777870;
+      background: transparent;
+      font-size: 12px;
+      font-weight: 550;
+      text-align: left;
+      transition: color var(--ease), background var(--ease), border-color var(--ease);
+    }
+    .nav-subitem:hover { color: var(--ink); background: #e7e7e2; }
+    .nav-subitem.active {
+      color: #255b4b;
+      background: #e4eeea;
+      border-color: #d2e2da;
+      font-weight: 700;
+    }
+    .nav-subitem .nav-subicon { width: 15px; height: 15px; flex: 0 0 15px; color: currentColor; }
+    .nav-subitem .nav-subicon svg { width: 15px; height: 15px; }
     .sidebar-note {
       gap: 7px;
       margin: 20px 5px 0;
@@ -960,10 +1012,16 @@
             <button class="nav-item" data-view="review" type="button"><span class="nav-icon" data-icon="refresh"></span><span>内容复盘</span></button>
           </div>
         </div>
-        <div class="nav-group">
-          <p class="nav-heading">生活与健康</p>
+        <div class="nav-group life-nav-group" id="life-nav-group">
+          <button class="nav-heading nav-group-toggle" id="life-nav-toggle" type="button" aria-expanded="true" aria-controls="life-subnav"><span>生活与健康</span><span class="nav-chevron" data-icon="chevron"></span></button>
           <div class="nav-list">
             <button class="nav-item" data-view="lifestyle" type="button"><span class="nav-icon" data-icon="heart"></span><span>每日生活记录</span><span class="nav-count" id="life-count">0/3</span></button>
+            <div class="nav-sublist" id="life-subnav" aria-label="每日生活记录二级导航">
+              <button class="nav-subitem" data-life-section="water" type="button"><span class="nav-subicon" data-icon="droplet"></span><span>饮水记录</span></button>
+              <button class="nav-subitem" data-life-section="meals" type="button"><span class="nav-subicon" data-icon="utensils"></span><span>饮食记录</span></button>
+              <button class="nav-subitem" data-life-section="exercise" type="button"><span class="nav-subicon" data-icon="activity"></span><span>运动打卡</span></button>
+              <button class="nav-subitem" data-life-section="wellbeing" type="button"><span class="nav-subicon" data-icon="moon"></span><span>睡眠与状态</span></button>
+            </div>
           </div>
         </div>
       </nav>
@@ -1076,6 +1134,7 @@
         check: '<path d="m5 12 4 4L19 6"></path>',
         clock: '<circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path>',
         chart: '<path d="M4 19V5M4 19h17"></path><path d="m7 15 3-4 3 2 5-7"></path>',
+        chevron: '<path d="m7 10 5 5 5-5"></path>',
         heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"></path>',
         droplet: '<path d="M12 3.2S6 10 6 14.5a6 6 0 0 0 12 0C18 10 12 3.2 12 3.2Z"></path><path d="M9.5 15.5a2.7 2.7 0 0 0 2.5 1.7"></path>',
         utensils: '<path d="M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10"></path><path d="M16 3v18M16 3c3 2 4 5 4 8h-4"></path>',
@@ -1144,6 +1203,7 @@
       let storageAvailable = true;
       let state = loadState();
       let currentView = 'daily';
+      let activeLifeSection = '';
       let toastTimer;
 
       function loadState() {
@@ -1253,6 +1313,7 @@
         document.getElementById('plan-date').value = state.selectedDate;
         document.getElementById('page-action-label').textContent = meta.action;
         document.querySelectorAll('.nav-item').forEach(button => button.classList.toggle('active', button.dataset.view === currentView));
+        document.querySelectorAll('.nav-subitem').forEach(button => button.classList.toggle('active', currentView === 'lifestyle' && button.dataset.lifeSection === activeLifeSection));
         document.getElementById('daily-count').textContent = `${completedCount(state.selectedDate)}/${totalCount()}`;
         document.getElementById('life-count').textContent = `${lifeCompletedCount(state.selectedDate)}/3`;
       }
@@ -1386,8 +1447,39 @@
       function renderAll() { updateHeader(); renderView(); }
       function setView(view) {
         currentView = view;
+        if (view !== 'lifestyle') activeLifeSection = '';
         closeMobileMenu();
         renderAll();
+      }
+      const lifeSectionTargets = {
+        water: { card: 'life-water-card', focus: 'life-water-custom' },
+        meals: { card: 'life-meals-card', focus: 'life-breakfast' },
+        exercise: { card: 'life-exercise-card', focus: 'life-exercise-done' },
+        wellbeing: { card: 'life-wellbeing-card', focus: 'life-sleep-hours' }
+      };
+      function activateLifeSection(section) {
+        const target = lifeSectionTargets[section];
+        if (!target) return;
+        activeLifeSection = section;
+        currentView = 'lifestyle';
+        closeMobileMenu();
+        renderAll();
+        requestAnimationFrame(() => {
+          const card = document.getElementById(target.card);
+          if (!card) return;
+          const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          const top = Math.max(0, window.scrollY + card.getBoundingClientRect().top - 112);
+          window.scrollTo({ top, behavior: reducedMotion ? 'auto' : 'smooth' });
+          document.getElementById(target.focus)?.focus({ preventScroll: true });
+        });
+      }
+      function toggleLifeNav() {
+        const toggle = document.getElementById('life-nav-toggle');
+        const subnav = document.getElementById('life-subnav');
+        if (!toggle || !subnav) return;
+        const expanded = toggle.getAttribute('aria-expanded') === 'true';
+        toggle.setAttribute('aria-expanded', String(!expanded));
+        subnav.hidden = expanded;
       }
 
       function bindViewEvents() {
@@ -1620,10 +1712,10 @@
         const remixEntries = state.remixes.map(item => ({ view: 'remix', title: item.title, detail: item.reason || item.platform || '参考视频' }));
         const reviewEntries = state.reviews.map(item => ({ view: 'review', title: item.title, detail: item.lesson || item.opening || '内容复盘' }));
         const lifestyleEntries = [
-          { view: 'lifestyle', title: '每日饮水', detail: '喝水 饮水量 水杯 ml' },
-          { view: 'lifestyle', title: '饮食记录', detail: '早餐 午餐 晚餐 加餐 零食' },
-          { view: 'lifestyle', title: '运动打卡', detail: '散步 跑步 拉伸 运动时长' },
-          { view: 'lifestyle', title: '睡眠与身心状态', detail: '睡眠 心情 精力 身体感受' }
+          { view: 'lifestyle', section: 'water', title: '每日饮水', detail: '喝水 饮水量 水杯 ml' },
+          { view: 'lifestyle', section: 'meals', title: '饮食记录', detail: '早餐 午餐 晚餐 加餐 零食' },
+          { view: 'lifestyle', section: 'exercise', title: '运动打卡', detail: '散步 跑步 拉伸 运动时长' },
+          { view: 'lifestyle', section: 'wellbeing', title: '睡眠与身心状态', detail: '睡眠 心情 精力 身体感受' }
         ];
         return [...taskEntries, ...lifestyleEntries, ...ideaEntries, ...remixEntries, ...reviewEntries];
       }
@@ -1638,7 +1730,7 @@
         if (!normalized) { closeSearch(); return; }
         const matches = buildSearchIndex().filter(item => `${item.title} ${item.detail}`.toLocaleLowerCase('zh-CN').includes(normalized)).slice(0, 8);
         results.innerHTML = matches.length
-          ? matches.map(item => `<button class="search-result" type="button" role="option" data-search-view="${item.view}"><span><strong>${escapeHTML(item.title)}</strong><span>${escapeHTML(item.detail)}</span></span><span>${escapeHTML(VIEW_META[item.view].label)}</span></button>`).join('')
+          ? matches.map(item => `<button class="search-result" type="button" role="option" data-search-view="${item.view}"${item.section ? ` data-search-section="${item.section}"` : ''}><span><strong>${escapeHTML(item.title)}</strong><span>${escapeHTML(item.detail)}</span></span><span>${escapeHTML(VIEW_META[item.view].label)}</span></button>`).join('')
           : '<div class="search-empty">没有匹配内容</div>';
         results.hidden = false;
       }
@@ -1673,7 +1765,16 @@
         syncSidebarAccessibility();
         if (open) sidebar.querySelector('.nav-item')?.focus();
       }
-      document.getElementById('primary-nav').addEventListener('click', event => { const button = event.target.closest('[data-view]'); if (button) setView(button.dataset.view); });
+      document.getElementById('life-nav-toggle').addEventListener('click', toggleLifeNav);
+      document.getElementById('primary-nav').addEventListener('click', event => {
+        const sectionButton = event.target.closest('[data-life-section]');
+        if (sectionButton) {
+          activateLifeSection(sectionButton.dataset.lifeSection);
+          return;
+        }
+        const button = event.target.closest('[data-view]');
+        if (button) setView(button.dataset.view);
+      });
       document.getElementById('mobile-menu').addEventListener('click', toggleMobileMenu);
       document.getElementById('mobile-scrim').addEventListener('click', closeMobileMenu);
       document.getElementById('quick-add').addEventListener('click', handleQuickAdd);
@@ -1692,7 +1793,8 @@
       document.getElementById('search-results').addEventListener('click', event => {
         const result = event.target.closest('[data-search-view]');
         if (!result) return;
-        setView(result.dataset.searchView);
+        if (result.dataset.searchSection) activateLifeSection(result.dataset.searchSection);
+        else setView(result.dataset.searchView);
         workspaceSearch.value = '';
         closeSearch();
       });
