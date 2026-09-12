@@ -507,27 +507,14 @@
       font-weight: 650;
       letter-spacing: 0;
     }
-    .nav-group-toggle {
-      width: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      padding: 0 10px 4px;
-      border: 0;
-      color: #777870;
-      background: transparent;
-      text-align: left;
-      cursor: pointer;
-    }
-    .nav-group-toggle:hover { color: var(--ink); }
-    .nav-group-toggle .nav-chevron {
+    .nav-item.has-subnav .nav-label { min-width: 0; }
+    .nav-item .nav-chevron {
       width: 14px;
       height: 14px;
       flex: 0 0 14px;
       transition: transform var(--ease), color var(--ease);
     }
-    .nav-group-toggle[aria-expanded="false"] .nav-chevron { transform: rotate(-90deg); }
+    .nav-item[aria-expanded="false"] .nav-chevron { transform: rotate(-90deg); }
     .nav-list { display: grid; gap: 3px; }
     .nav-item {
       min-height: 44px;
@@ -566,6 +553,7 @@
       padding-left: 11px;
       border-left: 1px solid #d5d5cf;
     }
+    .nav-sublist[hidden] { display: none; }
     .nav-subitem {
       min-height: 34px;
       display: flex;
@@ -590,6 +578,8 @@
     }
     .nav-subitem .nav-subicon { width: 15px; height: 15px; flex: 0 0 15px; color: currentColor; }
     .nav-subitem .nav-subicon svg { width: 15px; height: 15px; }
+    .life-grid.is-single { grid-template-columns: minmax(0, 1fr); }
+    .life-card[hidden] { display: none; }
     .sidebar-note {
       gap: 7px;
       margin: 20px 5px 0;
@@ -940,6 +930,7 @@
       .mobile-bar .mobile-brand { color: var(--ink); font-weight: 700; }
       .mobile-brand .brand-mark { color: #363732; background: #e5e5e1; }
       .mobile-menu { width: 44px; height: 44px; color: var(--ink); background: #ffffff; border-color: #d3d3cd; }
+      .nav-subitem { min-height: 44px; }
       .page { padding: 28px 18px 52px; }
       .page-header { align-items: flex-start; }
       .header-actions { align-items: center; flex-direction: row; }
@@ -1013,10 +1004,10 @@
           </div>
         </div>
         <div class="nav-group life-nav-group" id="life-nav-group">
-          <button class="nav-heading nav-group-toggle" id="life-nav-toggle" type="button" aria-expanded="true" aria-controls="life-subnav"><span>生活与健康</span><span class="nav-chevron" data-icon="chevron"></span></button>
+          <p class="nav-heading">生活与健康</p>
           <div class="nav-list">
-            <button class="nav-item" data-view="lifestyle" type="button"><span class="nav-icon" data-icon="heart"></span><span>每日生活记录</span><span class="nav-count" id="life-count">0/3</span></button>
-            <div class="nav-sublist" id="life-subnav" aria-label="每日生活记录二级导航">
+            <button class="nav-item has-subnav" id="life-nav-toggle" data-view="lifestyle" type="button" aria-expanded="false" aria-controls="life-subnav"><span class="nav-icon" data-icon="heart"></span><span class="nav-label">每日生活记录</span><span class="nav-count" id="life-count">0/3</span><span class="nav-chevron" data-icon="chevron"></span></button>
+            <div class="nav-sublist" id="life-subnav" aria-label="每日生活记录二级导航" hidden>
               <button class="nav-subitem" data-life-section="water" type="button"><span class="nav-subicon" data-icon="droplet"></span><span>饮水记录</span></button>
               <button class="nav-subitem" data-life-section="meals" type="button"><span class="nav-subicon" data-icon="utensils"></span><span>饮食记录</span></button>
               <button class="nav-subitem" data-life-section="exercise" type="button"><span class="nav-subicon" data-icon="activity"></span><span>运动打卡</span></button>
@@ -1085,6 +1076,12 @@
         remix: { label: '爆款热点视频 / 二创', kicker: '参考视频 · 结构拆解 · 原创转化', lede: '只记录实际看过的内容，不代填热度与结论。', action: '新增参考' },
         review: { label: '内容复盘', kicker: '真实数据 · 内容判断 · 下一次改动', lede: '用已经发生的数据和观察，决定下一次只改什么。', action: '新增复盘' },
         lifestyle: { label: '每日生活记录', kicker: '饮水 · 饮食 · 运动 · 身心状态', lede: '轻量记下今天真实发生的生活片段，不把健康变成另一张成绩单。', action: '补一项记录' }
+      };
+      const LIFE_SECTION_META = {
+        water: { label: '饮水记录', kicker: '生活与健康 · 每日生活记录', lede: '喝完一杯就顺手记下实际饮水量，不预设达标线。', action: '添加饮水' },
+        meals: { label: '饮食记录', kicker: '生活与健康 · 每日生活记录', lede: '用一句话记下今天吃过的东西，不计算热量或评分。', action: '填写饮食' },
+        exercise: { label: '运动打卡', kicker: '生活与健康 · 每日生活记录', lede: '记录运动是否完成、类型、时长和身体感受。', action: '填写运动' },
+        wellbeing: { label: '睡眠与状态', kicker: '生活与健康 · 每日生活记录', lede: '睡眠和身心状态只用于观察自己的节奏，不参与完成度。', action: '填写状态' }
       };
       const TASKS = [
         {
@@ -1305,7 +1302,7 @@
         document.querySelectorAll('[data-icon]').forEach(node => { node.innerHTML = icon(node.dataset.icon, node.classList.contains('nav-icon') ? 19 : 18); });
       }
       function updateHeader() {
-        const meta = VIEW_META[currentView];
+        const meta = currentView === 'lifestyle' && activeLifeSection ? LIFE_SECTION_META[activeLifeSection] : VIEW_META[currentView];
         document.getElementById('breadcrumb').textContent = meta.kicker;
         document.getElementById('page-title').textContent = meta.label;
         document.getElementById('page-lede').textContent = meta.lede;
@@ -1343,6 +1340,7 @@
       function renderLifestyle() {
         const log = getLifeLog();
         const done = lifeCompletedCount();
+        const singleSection = Boolean(activeLifeSection);
         const mealCount = Object.values(log.meals).filter(item => item.trim()).length;
         const mealSaved = hasMealRecord(log);
         const exerciseSaved = hasExerciseRecord(log);
@@ -1354,8 +1352,8 @@
             <div><label class="sr-only" for="mobile-plan-date">选择记录日期</label><input id="mobile-plan-date" type="date" value="${escapeHTML(state.selectedDate)}"></div>
           </div>
           <div class="workspace-intro"><div><h2>${formatDateTag(state.selectedDate)}的生活片段</h2><p>记下真实发生的饮水、饮食与运动；睡眠和状态只用于看见自己，不作为完成指标。</p></div><span class="tag ${done === 3 ? 'status-done' : 'status-active'}">${done}/3 已记录</span></div>
-          <div class="life-grid">
-            <section class="panel life-card" id="life-water-card" aria-labelledby="life-water-title">
+          <div class="life-grid${singleSection ? ' is-single' : ''}">
+            <section class="panel life-card" id="life-water-card" aria-labelledby="life-water-title" ${singleSection && activeLifeSection !== 'water' ? 'hidden' : ''}>
               <div class="panel-header"><div><h2 id="life-water-title">每日饮水</h2><p>喝完一杯，就顺手加一次</p></div><span data-icon="droplet" aria-hidden="true"></span></div>
               <div class="panel-body">
                 <div class="life-total"><div><span>今日累计</span><strong id="life-water-total">${log.waterMl.toLocaleString('zh-CN')} <small>ml</small></strong></div><p class="life-total-note">按实际饮用量记录，不预设达标线。</p></div>
@@ -1365,7 +1363,7 @@
               </div>
             </section>
 
-            <section class="panel life-card" id="life-meals-card" aria-labelledby="life-meals-title">
+            <section class="panel life-card" id="life-meals-card" aria-labelledby="life-meals-title" ${singleSection && activeLifeSection !== 'meals' ? 'hidden' : ''}>
               <div class="panel-header"><div><h2 id="life-meals-title">饮食记录</h2><p>一句话就够，不计算热量</p></div><span class="tag ${mealSaved ? 'status-done' : 'status-idle'}">${mealSaved ? `已记 ${mealCount} 餐` : '待记录'}</span></div>
               <div class="panel-body">
                 <div class="life-form-grid">
@@ -1379,7 +1377,7 @@
               </div>
             </section>
 
-            <section class="panel life-card" id="life-exercise-card" aria-labelledby="life-exercise-title">
+            <section class="panel life-card" id="life-exercise-card" aria-labelledby="life-exercise-title" ${singleSection && activeLifeSection !== 'exercise' ? 'hidden' : ''}>
               <div class="panel-header"><div><h2 id="life-exercise-title">运动打卡</h2><p>完成、类型和感受都可以记</p></div><span class="tag ${exerciseSaved ? 'status-done' : 'status-idle'}">${exerciseSaved ? '已记录' : '待记录'}</span></div>
               <div class="panel-body">
                 <div class="life-form-grid">
@@ -1393,7 +1391,7 @@
               </div>
             </section>
 
-            <section class="panel life-card" id="life-wellbeing-card" aria-labelledby="life-wellbeing-title">
+            <section class="panel life-card" id="life-wellbeing-card" aria-labelledby="life-wellbeing-title" ${singleSection && activeLifeSection !== 'wellbeing' ? 'hidden' : ''}>
               <div class="panel-header"><div><h2 id="life-wellbeing-title">睡眠与身心状态</h2><p>只为观察自己，不参与 0/3</p></div><span class="tag ${wellbeingSaved ? 'status-done' : 'status-idle'}">${wellbeingSaved ? '已记录' : '可选'}</span></div>
               <div class="panel-body">
                 <div class="life-form-grid">
@@ -1462,6 +1460,7 @@
         if (!target) return;
         activeLifeSection = section;
         currentView = 'lifestyle';
+        setLifeNavExpanded(true);
         closeMobileMenu();
         renderAll();
         requestAnimationFrame(() => {
@@ -1473,13 +1472,17 @@
           document.getElementById(target.focus)?.focus({ preventScroll: true });
         });
       }
-      function toggleLifeNav() {
+      function setLifeNavExpanded(expanded) {
         const toggle = document.getElementById('life-nav-toggle');
         const subnav = document.getElementById('life-subnav');
         if (!toggle || !subnav) return;
-        const expanded = toggle.getAttribute('aria-expanded') === 'true';
-        toggle.setAttribute('aria-expanded', String(!expanded));
-        subnav.hidden = expanded;
+        toggle.setAttribute('aria-expanded', String(expanded));
+        subnav.hidden = !expanded;
+      }
+      function toggleLifeNav() {
+        const toggle = document.getElementById('life-nav-toggle');
+        if (!toggle) return;
+        setLifeNavExpanded(toggle.getAttribute('aria-expanded') !== 'true');
       }
 
       function bindViewEvents() {
@@ -1694,8 +1697,11 @@
       function handleQuickAdd() {
         let targetId = currentView === 'daily' ? 'day-note' : currentView === 'ideas' ? 'idea-topic' : currentView === 'remix' ? 'remix-title' : currentView === 'review' ? 'review-title' : 'life-water-custom';
         if (currentView === 'lifestyle') {
-          const log = getLifeLog();
-          targetId = log.waterMl === 0 ? 'life-water-custom' : !hasMealRecord(log) ? 'life-breakfast' : !hasExerciseRecord(log) ? 'life-exercise-type' : 'life-sleep-hours';
+          if (activeLifeSection && lifeSectionTargets[activeLifeSection]) targetId = lifeSectionTargets[activeLifeSection].focus;
+          else {
+            const log = getLifeLog();
+            targetId = log.waterMl === 0 ? 'life-water-custom' : !hasMealRecord(log) ? 'life-breakfast' : !hasExerciseRecord(log) ? 'life-exercise-type' : 'life-sleep-hours';
+          }
         }
         const target = document.getElementById(targetId);
         if (target) {
@@ -1765,7 +1771,6 @@
         syncSidebarAccessibility();
         if (open) sidebar.querySelector('.nav-item')?.focus();
       }
-      document.getElementById('life-nav-toggle').addEventListener('click', toggleLifeNav);
       document.getElementById('primary-nav').addEventListener('click', event => {
         const sectionButton = event.target.closest('[data-life-section]');
         if (sectionButton) {
@@ -1773,7 +1778,15 @@
           return;
         }
         const button = event.target.closest('[data-view]');
-        if (button) setView(button.dataset.view);
+        if (!button) return;
+        if (button.id === 'life-nav-toggle') {
+          toggleLifeNav();
+          activeLifeSection = '';
+          currentView = 'lifestyle';
+          renderAll();
+          return;
+        }
+        setView(button.dataset.view);
       });
       document.getElementById('mobile-menu').addEventListener('click', toggleMobileMenu);
       document.getElementById('mobile-scrim').addEventListener('click', closeMobileMenu);
